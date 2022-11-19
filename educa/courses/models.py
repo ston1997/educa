@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.template.loader import render_to_string
+from django.utils.safestring import mark_safe
 from .fields import OrderField
 
 
@@ -27,6 +29,7 @@ class Course(models.Model):
     slug = models.SlugField(max_length=200, unique=True)
     overview = models.TextField()
     created = models.DateTimeField(auto_now_add=True)
+    students = models.ManyToManyField(User, related_name='courses_joined', blank=True)
 
     class Meta:
         ordering = ['-created']
@@ -43,11 +46,11 @@ class Module(models.Model):
     description = models.TextField(blank=True)
     order = OrderField(blank=True, for_fields=['course'])
 
-    class Meta:
-        ordering = ['order']
-
     def __str__(self):
         return '{}. {}'.format(self.order, self.title)
+
+    class Meta:
+        ordering = ['order']
 
 
 class Content(models.Model):
@@ -83,6 +86,9 @@ class ItemBase(models.Model):
     def __str__(self):
         return self.title
 
+    def render(self):
+        return render_to_string(f'courses/content/{self._meta.model_name}.html',
+                                {'item': self})
 
 class Text(ItemBase):
     content = models.TextField()
@@ -98,4 +104,3 @@ class Image(ItemBase):
 
 class Video(ItemBase):
     url = models.URLField()
-
